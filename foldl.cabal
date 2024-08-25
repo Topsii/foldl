@@ -43,6 +43,7 @@ Library
             semigroups   >= 0.17 && < 1.20
     Exposed-Modules:
         Control.Foldl,
+        Control.Foldl1,
         Control.Foldl.ByteString,
         Control.Foldl.NonEmpty
         Control.Foldl.Text,

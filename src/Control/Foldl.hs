@@ -235,7 +235,7 @@ import qualified Data.Semigroupoid
 -}
 data Fold a b
   -- | @Fold @ @ step @ @ initial @ @ extract@
-  = forall x. Fold (x -> a -> x) x (x -> b)
+  = forall x. Fold !(x -> a -> x) !x !(x -> b)
 
 instance Functor (Fold a) where
     fmap f (Fold step begin done) = Fold step begin (f . done)

@@ -4,6 +4,7 @@ module Main (main) where
 
 import Control.Foldl hiding (map)
 import qualified Control.Foldl.NonEmpty as Foldl1
+import qualified Control.Foldl1 as L1
 import Criterion.Main
 import qualified Data.List
 import Prelude hiding (length, sum)
@@ -66,6 +67,8 @@ main = defaultMain
                 nf (NonEmpty.map succ)
             , bench "Foldl1.fold1 (Foldl1.handles (to succ) (Foldl1.fromFold list))" .
                 nf (Foldl1.fold1 (Foldl1.handles (to succ) (Foldl1.fromFold list)))
+            , bench "L1.fold1 (L1.handles (to succ) (L1.fromFold list))" .
+                nf (L1.fold1 (L1.handles (to succ) (L1.fromFold list)))
             ]
         ]
   ]
