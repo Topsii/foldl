@@ -1,3 +1,5 @@
+- Add `nest` for `Fold1`
+- Add `Choice`, `Closed`, `Cosieve`, `Extend`, `Semigroupoid`, `Category`, `Strong`, `Arrow` and `ArrowChoice` instances for `Fold1`
 - Add `Closed` instance for `Fold`
 
 1.4.17
