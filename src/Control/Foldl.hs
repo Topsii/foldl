@@ -259,7 +259,13 @@ instance Monad (Fold a) where
   return = pure
   {-# INLINE return #-}
 
-  m >>= f = fold . f <$> m <*> list
+  m >>= f = g <$> list
+      where
+        g as = c
+          where
+            (b, c) = fold p as
+              where
+                p = (,) <$> m <*> f b
   {-# INLINE (>>=) #-}
 
 instance Monad m => Monad (FoldM m a) where
