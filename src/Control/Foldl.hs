@@ -120,6 +120,8 @@ module Control.Foldl (
     , simplify
     , lifts
     , hoists
+    , embeds
+    , squashes
     , duplicateM
     , _Fold1
     , premap
@@ -154,7 +156,7 @@ module Control.Foldl (
 import Control.Foldl.Optics (_Left, _Right)
 import Control.Applicative
 import Control.Foldl.Internal (Maybe'(..), lazy, Either'(..), Pair(..), hush)
-import Control.Monad ((<=<))
+import Control.Monad ((<=<), join)
 import Control.Monad.Primitive (PrimMonad, RealWorld)
 import Control.Comonad
 import Data.Foldable (Foldable)
@@ -252,6 +254,20 @@ instance Choice Fold where
 instance Cosieve Fold [] where
     cosieve = fold
     {-# INLINE cosieve #-}
+
+instance Monad (Fold a) where
+  return = pure
+  {-# INLINE return #-}
+
+  m >>= f = fold . f <$> m <*> list
+  {-# INLINE (>>=) #-}
+
+instance Monad m => Monad (FoldM m a) where
+  return = pure
+  {-# INLINE return #-}
+
+  m >>= f = postmapM id $ foldM . f <$> m <*> generalize list
+  {-# INLINE (>>=) #-}
 
 instance Costrong Fold where
     unfirst p = fmap f list
@@ -1172,6 +1188,20 @@ hoists phi (FoldM step begin done) = FoldM (\a b -> phi (step a b)) (phi begin) 
 -}
 lifts :: Monad m => m b -> FoldM m a b
 lifts mb = FoldM (\() _ -> pure ()) (pure ()) (\() -> mb)
+
+embeds :: Monad n => (forall x. m x -> FoldM n a x) -> FoldM m a b -> FoldM n a b
+embeds f fld = squashes $ hoists f fld
+
+squashes :: (Monad m) => FoldM (FoldM m a) a b -> FoldM m a b
+squashes (FoldM step begin done) = join $ FoldM step' begin' done'
+  where
+    step' fmax a = pure $ do
+      x <- fmax
+      step x a
+    begin' = pure begin
+    done' fmax = pure $ do
+      x <- fmax
+      done x
 
 {-| Allows to continue feeding a 'FoldM' even after passing it to a function
 that closes it.
