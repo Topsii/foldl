@@ -62,7 +62,7 @@ module Control.Foldl.NonEmpty (
     ) where
 
 import Control.Applicative (liftA2, Const(..))
-import Control.Arrow (Arrow (..), ArrowChoice (..))
+import Control.Arrow (Arrow (..), ArrowChoice (..), ArrowLoop(..))
 import Control.Category (Category ())
 import qualified Control.Category
 import Control.Comonad (Comonad(..))
@@ -158,6 +158,16 @@ instance Cosieve Fold1 NonEmpty where
     cosieve = Control.Foldl.NonEmpty.fold1
     {-# INLINE cosieve #-}
 
+instance Costrong Fold1 where
+    unfirst p = fmap f nonEmpty
+      where
+        f as = b
+          where
+            (b, d) = Control.Foldl.NonEmpty.fold1 p $ do
+              a <- as
+              pure (a, d)
+    {-# INLINE unfirst #-}
+
 instance Applicative (Fold1 a) where
     pure b = Fold1 (pure (pure b))
     {-# INLINE pure #-}
@@ -209,6 +219,10 @@ instance Arrow Fold1 where
 instance ArrowChoice Fold1 where
     left = left'
     {-# INLINE left #-}
+
+instance ArrowLoop Fold1 where
+    loop = unfirst
+    {-# INLINE loop #-}
 
 instance Num b => Num (Fold1 a b) where
     fromInteger = pure . fromInteger
