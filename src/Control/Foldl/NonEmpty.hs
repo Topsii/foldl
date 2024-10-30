@@ -4,6 +4,7 @@
 {-# LANGUAGE ViewPatterns #-}
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
+{-# LANGUAGE DerivingVia #-}
 
 {-| This module provides a `Fold1` type that is a \"non-empty\" analog of the
     `Fold` type, meaning that it requires at least one input element in order to
@@ -69,7 +70,7 @@ import Control.Comonad (Comonad(..))
 import Control.Foldl (Fold(..))
 import Control.Foldl.Internal (Either'(..))
 import Data.List.NonEmpty (NonEmpty(..))
-import Data.Monoid (Dual(..))
+import Data.Monoid (Dual(..), Ap(..))
 import Data.Functor.Apply (Apply (..))
 import Data.Functor.Extend (Extend (..))
 import Data.Profunctor
@@ -81,6 +82,7 @@ import Data.Functor.Contravariant (Contravariant(..))
 import Prelude hiding (head, last, minimum, maximum)
 
 import qualified Control.Foldl as Foldl
+import Data.Functor.Compose (Compose(..))
 
 {- $setup
 
@@ -99,7 +101,9 @@ import qualified Control.Foldl as Foldl
 {-| A `Fold1` is like a `Fold` except that it consumes at least one input
     element
 -}
-data Fold1 a b = Fold1 (a -> Fold a b)
+newtype Fold1 a b = Fold1 (a -> Fold a b)
+    deriving (Functor, Applicative) via Compose ((->) a) (Fold a)
+    deriving (Semigroup, Monoid) via (Ap (Fold1 a) b)
 
 {-| @Fold1_@ is an alternative to the @Fold1@ constructor if you need to
     explicitly work with an initial, step and extraction function.
@@ -135,10 +139,6 @@ toFold_ (Fold1 (f :: a -> Fold a b)) = (begin', step', done')
     begin' = f
 {-# INLINABLE toFold_ #-}
 
-instance Functor (Fold1 a) where
-    fmap f (Fold1 k) = Fold1 (fmap (fmap f) k)
-    {-# INLINE fmap #-}
-
 instance Profunctor Fold1 where
     lmap = premap
     {-# INLINE lmap #-}
@@ -158,27 +158,9 @@ instance Cosieve Fold1 NonEmpty where
     cosieve = Control.Foldl.NonEmpty.fold1
     {-# INLINE cosieve #-}
 
-instance Applicative (Fold1 a) where
-    pure b = Fold1 (pure (pure b))
-    {-# INLINE pure #-}
-
-    Fold1 l <*> Fold1 r = Fold1 (liftA2 (<*>) l r)
-    {-# INLINE (<*>) #-}
-
 instance Extend (Fold1 a) where
     duplicated (Fold1 f) = Fold1 $ fmap fromFold . duplicated . f
     {-# INLINE duplicated #-}
-
-instance Semigroup b => Semigroup (Fold1 a b) where
-    (<>) = liftA2 (<>)
-    {-# INLINE (<>) #-}
-
-instance Monoid b => Monoid (Fold1 a b) where
-    mempty = pure mempty
-    {-# INLINE mempty #-}
-
-    mappend = (<>)
-    {-# INLINE mappend #-}
 
 instance Semigroupoid Fold1 where
     o (Fold1 l1) (Fold1 r1) = Fold1 f1
