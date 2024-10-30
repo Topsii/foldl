@@ -1,3 +1,5 @@
+- Add `lifts`
+
 1.4.17
 
 - Add [Fold1 utilities](): `purely`, `purely_`, `premap`, `handles`, `foldOver`, `folded1`
