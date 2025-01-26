@@ -157,6 +157,7 @@ import Control.Foldl.Internal (Maybe'(..), lazy, Either'(..), Pair(..), hush)
 import Control.Monad ((<=<))
 import Control.Monad.Primitive (PrimMonad, RealWorld)
 import Control.Comonad
+import Data.Distributive (Distributive(..))
 import Data.Foldable (Foldable)
 import Data.Functor.Identity (Identity, runIdentity)
 import Data.Functor.Contravariant (Contravariant(..))
@@ -271,6 +272,24 @@ instance Comonad (Fold a) where
 
     duplicate (Fold step begin done) = Fold step begin (\x -> Fold step x done)
     {-#  INLINE duplicate #-}
+
+instance Distributive (Fold a) where
+  distribute (f :: f (Fold a b)) = Fold step' begin' done'
+    where
+      done' :: f (Fold a b) -> f b
+      done' = fmap extract
+
+      step' :: f (Fold a b) -> a -> f (Fold a b)
+      step' ff a = fmap step'' ff
+        where
+          step'' (Fold step begin done) = Fold step (step begin a) done
+
+      begin' :: f (Fold a b)
+      begin' = f
+
+instance Monad (Fold a) where
+  return = pure
+  (>>=) fld f = distribute f <*> fld
 
 instance Applicative (Fold a) where
     pure b    = Fold (\() _ -> ()) () (\() -> b)
